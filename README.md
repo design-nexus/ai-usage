@@ -4,6 +4,10 @@ A single Omarchy bar widget for local AI coding-agent activity. See sessions, us
 
 The panel opens on the agent with the most recently used local session, including when no agent currently has a running process.
 
+![AI Usage panel showing the active Codex session, quota limits, and model usage](assets/screenshots/ai-usage-panel.png)
+
+_AI Usage running in Omarchy._
+
 ## Features
 
 - One compact bar icon with per-agent activity dots and an optional badge.
