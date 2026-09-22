@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "design-nexus.ai-usage",
+  "name": "Design Nexus AI Usage",
+  "version": "1.1.0",
+  "author": "Design Nexus",
+  "license": "MIT",
+  "description": "Unified local usage, sessions, and quota panel for Codex, Grok, Antigravity, Claude Code, Copilot, and Cursor.",
+  "kinds": ["bar-widget"],
+  "activation": "on-demand",
+  "entryPoints": { "barWidget": "Widget.qml" },
+  "barWidget": {
+    "displayName": "AI Usage",
+    "description": "One Omarchy icon with provider activity indicators and a consolidated usage panel.",
+    "category": "AI",
+    "allowMultiple": false,
+    "defaults": {
+      "refreshIntervalSec": 60,
+      "enableQuotaAlerts": true,
+      "quotaAlertThreshold": 15,
+      "terminalCommand": "",
+      "recentSessionsLimit": 5,
+      "enableCodex": true,
+      "enableGrok": true,
+      "enableAntigravity": true,
+      "enableClaude": true,
+      "enableCopilot": true,
+      "enableCursor": true
+    },
+    "schema": [
+      { "key": "refreshIntervalSec", "type": "integer", "label": "Refresh interval (seconds)", "min": 10, "max": 1800, "step": 10, "defaultValue": 60 },
+      { "key": "enableQuotaAlerts", "type": "boolean", "label": "Low quota desktop alerts", "defaultValue": true },
+      { "key": "quotaAlertThreshold", "type": "integer", "label": "Low quota alert threshold (%)", "min": 5, "max": 50, "step": 5, "defaultValue": 15 },
+      { "key": "terminalCommand", "type": "string", "label": "Terminal emulator override", "defaultValue": "" },
+      { "key": "recentSessionsLimit", "type": "integer", "label": "Recent sessions shown", "min": 3, "max": 10, "step": 1, "defaultValue": 5 },
+      { "key": "enableCodex", "type": "boolean", "label": "Show Codex", "defaultValue": true },
+      { "key": "enableGrok", "type": "boolean", "label": "Show Grok", "defaultValue": true },
+      { "key": "enableAntigravity", "type": "boolean", "label": "Show Antigravity", "defaultValue": true },
+      { "key": "enableClaude", "type": "boolean", "label": "Show Claude Code", "defaultValue": true },
+      { "key": "enableCopilot", "type": "boolean", "label": "Show Copilot", "defaultValue": true },
+      { "key": "enableCursor", "type": "boolean", "label": "Show Cursor", "defaultValue": true }
+    ]
+  }
+}
