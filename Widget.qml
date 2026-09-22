@@ -18,6 +18,9 @@ BarWidget {
   property bool refreshFlash: false
   property double nowMs: Date.now()
   property string selectedProviderId: "codex"
+  // Set only while opening the panel. A manual refresh must not move a tab
+  // the user explicitly chose.
+  property bool selectLastUsedOnRefresh: false
 
   // Built-in bar icons use barForeground; foreground can be a dimmed text role.
   readonly property color foreground: (bar && bar.barForeground) ? bar.barForeground : ((bar && bar.foreground) ? bar.foreground : (Color.foreground || "#D8DEE9"))
@@ -123,27 +126,37 @@ BarWidget {
     selectedProviderId = list.length ? list[0].providerId : ""
   }
 
-  function newestActiveMs(provider) {
-    var sessions = provider.activeSessions || []
+  function sessionActivityMs(session) {
+    if (!session) return NaN
+    var ms = Date.parse(session.updated_at || session.lastModified || "")
+    return isFinite(ms) ? ms : NaN
+  }
+
+  function newestSessionMs(sessions) {
     var best = NaN
     for (var i = 0; i < sessions.length; i++) {
-      var ms = Date.parse(sessions[i].updated_at || "")
+      var ms = sessionActivityMs(sessions[i])
       if (!isFinite(ms)) continue
       if (!isFinite(best) || ms > best) best = ms
     }
     return best
   }
 
-  function selectRunningAgent() {
+  function newestProviderSessionMs(provider) {
+    var activeMs = newestSessionMs(provider.activeSessions || [])
+    var recentMs = newestSessionMs(provider.recentSessions || [])
+    if (!isFinite(activeMs)) return recentMs
+    if (!isFinite(recentMs)) return activeMs
+    return Math.max(activeMs, recentMs)
+  }
+
+  function selectLastUsedAgent() {
     var list = usageMain.enabledProviders || []
-    var running = []
     var bestId = ""
     var bestMs = NaN
     for (var i = 0; i < list.length; i++) {
       var provider = list[i]
-      if (!provider.hasActiveSession) continue
-      running.push(provider)
-      var ms = newestActiveMs(provider)
+      var ms = newestProviderSessionMs(provider)
       if (!isFinite(ms)) continue
       if (!isFinite(bestMs) || ms > bestMs) {
         bestMs = ms
@@ -154,11 +167,7 @@ BarWidget {
       selectedProviderId = bestId
       return
     }
-    if (!running.length) return
-    for (var j = 0; j < running.length; j++) {
-      if (running[j].providerId === selectedProviderId) return
-    }
-    selectedProviderId = running[0].providerId
+    ensureSelection()
   }
 
   function showSection(provider, hasData, refreshing, ready, stats) {
@@ -430,9 +439,19 @@ BarWidget {
 
   onPopupOpenChanged: {
     if (popupOpen) {
-      if (!settingsMode) selectRunningAgent()
+      if (!settingsMode) {
+        selectLastUsedAgent()
+        selectLastUsedOnRefresh = true
+      }
       root.nowMs = Date.now()
       Qt.callLater(function() { if (keyCatcher) keyCatcher.forceActiveFocus() })
+    }
+  }
+
+  onRefreshingChanged: {
+    if (!refreshing && popupOpen && !settingsMode && selectLastUsedOnRefresh) {
+      selectLastUsedAgent()
+      selectLastUsedOnRefresh = false
     }
   }
 
@@ -468,11 +487,20 @@ BarWidget {
 
   IpcHandler {
     target: "design-nexus.ai-usage"
-    function open(): string { root.showUsage(); root.popupOpen = true; return "ok" }
+    function open(): string {
+      root.showUsage()
+      root.popupOpen = true
+      root.triggerRefresh(false)
+      return "ok"
+    }
     function close(): string { root.close(); return "ok" }
     function toggle(): string {
       if (root.popupOpen) root.close()
-      else { root.showUsage(); root.popupOpen = true }
+      else {
+        root.showUsage()
+        root.popupOpen = true
+        root.triggerRefresh(false)
+      }
       return "ok"
     }
     function refresh(): string { root.triggerRefresh(); return "ok" }
@@ -659,6 +687,7 @@ BarWidget {
               active: root.selectedProviderId === modelData.providerId
               onClicked: {
                 root.selectedProviderId = modelData.providerId
+                root.selectLastUsedOnRefresh = false
                 if (flick) flick.contentY = 0
               }
             }
